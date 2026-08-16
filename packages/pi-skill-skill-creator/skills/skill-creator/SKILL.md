@@ -5,6 +5,8 @@ description: "Reusable skill design and maintenance. Use for SKILL.md creation, 
 
 # Skill Creator
 
+Creates and audits skills as connected instruction bundles: every supporting file reachable from `SKILL.md`, loaded under a stated condition, consumed by a workflow step, and covered by validation.
+
 ## Inputs
 
 Required:
@@ -18,84 +20,109 @@ Useful when available:
 - representative user requests, failures, or corrections
 - host documentation and nearby skill conventions
 
-## Reference guide
+## Host profile
 
-Read `references/skills-reference-guide-for-agents.md` before creating a skill or substantially restructuring one. For a narrow edit, use its reading map and consult only the relevant sections.
+Every skill is validated against a host profile that owns frontmatter limits, allowed fields, and supporting-directory rules. This bundle ships `assets/host-profiles/pi.json` (default) and `assets/host-profiles/generic.json` for host-neutral SKILL.md conventions. Load `references/host-profiles.md` when the target host is not Pi, when profile fields are questioned, or when adding a profile for a new host.
+
+## Resource map
+
+| Resource | Load when | Consumed by |
+|---|---|---|
+| `references/skills-reference-guide-for-agents.md` | Routing: pick focused references by task branch | every task entry point |
+| `references/destination-scopes.md` | Creating a new skill without an explicit target | stage 2 |
+| `references/trigger-and-body-design.md` | Writing or revising description or body | stages 5, 6 |
+| `references/workflow-resource-graph.md` | Designing stages, handoffs, or the file graph | stages 4, 5, 8 |
+| `references/supporting-files.md` | Splitting detail into `references/`, `scripts/`, `assets/`, `evals/` | stage 6 |
+| `references/host-profiles.md` | Host is not Pi, or profile limits are questioned | stages 3, 7 |
+| `references/testing-and-evaluation.md` | Building trigger/execution cases or fixtures | stage 8 |
+| `references/packaging-and-lifecycle.md` | Publishing, versioning, or rolling back | stage 9 |
+| `references/safety-and-recovery.md` | Destructive scope, secrets, or provenance is in play | stages 5, 8 |
+| `scripts/skill-efficiency-check.py` | Structural validation run | stages 7, 9 |
+| `scripts/run-skill-evals.py` | Behavioral fixture validation run | stage 8 |
+| `evals/cases.json` | Behavioral coverage for this skill itself | stage 8 |
 
 ## Workflow
 
+Each stage names its contract: **consumes → produces → used by → failure branch**.
+
 1. **Ground the task.**
-   - Read the existing `SKILL.md` and every file it directs the agent to read before deleting, merging, or restructuring anything.
-   - Verify host format rules, real tool names, commands, paths, and workspace conventions instead of preserving plausible-sounding assumptions.
-   - Identify two or three concrete requests the skill should handle.
+   - Consumes: user request, existing skill tree. Produces: concrete use cases. Used by: stages 2–6.
+   - Read the existing `SKILL.md` and every file it directs the agent to read before deleting, merging, or restructuring.
+   - Verify host format rules, real tool names, commands, and paths against host documentation or `references/host-profiles.md`—not memory.
+   - Reduce a vague request to 2–3 concrete use cases (goal, trigger, inputs, workflow, result) before drafting.
+   - Failure branch: inputs stay vague → ask for or construct concrete requests; do not draft yet.
 
-2. **Decide whether a skill is the right artifact.**
-   - Use a skill for a recurring task where reusable instructions, judgment, examples, or helpers improve execution.
-   - Use ordinary documentation for passive reference material with no repeatable agent workflow.
-   - A tool runbook can be a skill when its commands, failure handling, or result interpretation change agent behavior. A rigid project procedure may belong in the workspace's workflow or SOP system instead.
+2. **Resolve the destination scope.**
+   - Consumes: user request, workspace context. Produces: unambiguous destination path with scope and discovery classification. Used by: stage 6.
+   - Creating a new skill with no explicit target: ask once — `Global`, `Project-local`, or `Custom`. Never infer scope from the current working directory. Load `references/destination-scopes.md` for resolution rules.
+   - Global resolves to `${PI_CODING_AGENT_DIR}/skills/<name>` when `PI_CODING_AGENT_DIR` is set, else `~/.pi/agent/skills/<name>`. Project-local resolves to `<nearest-git-root>/.pi/skills/<name>` (cwd fallback when no `.git` ancestor). Custom requires a user-supplied path, classified as globally discovered, project-discovered, package-managed, or explicit-load-only (`pi --skill <path>` / settings entry).
+   - Before writing: show the resolved absolute path and scope. Destination already holds a `SKILL.md` → switch to modification semantics, never replace. Non-skill collision or unwritable destination → blocking; ask for a different target.
+   - Failure branch: no scope answer or ambiguous path → stop and ask; do not create by inference.
+   - Explicit target paths and requests to modify an existing skill bypass the prompt entirely.
 
-3. **Set the trigger boundary.**
-   - Treat the description as a semantic index: job, activation conditions, likely request language, key artifacts/outcomes, and only necessary exclusions.
-   - Compress for reliable model selection. Dense phrases beat explanatory sentences.
-   - No mood, rationale, promotion, or tutorial prose. Creative skills do not get creative descriptions.
-   - Prefer the shortest description that preserves reliable triggering.
-   - Quote the description by default so YAML punctuation cannot change its meaning.
+3. **Select the host profile.**
+   - Consumes: target host knowledge. Produces: profile choice (Pi default, `generic`, or a custom JSON per the profile contract). Used by: stages 5–7.
+   - Failure branch: host unverified → use `generic`, state the assumption, and mark host-specific fields as unverified in the report.
 
-4. **Choose the smallest complete structure.**
-   - Keep the core workflow and load-bearing judgment in `SKILL.md`.
-   - Use `references/` for detailed guidance, domain knowledge, extended examples, or edge cases that are not needed on every run.
-   - Use `scripts/` for deterministic validation or transformation that is more reliable as code.
-   - Use `assets/` for templates or static inputs consumed by the workflow.
-   - Do not create supporting folders without useful content, but actively consider whether each would make the skill more complete or dependable.
+4. **Decide whether a skill is the right artifact.**
+   - Consumes: use cases. Produces: artifact decision. Used by: stage 5.
+   - Use a skill for a recurring task where reusable instructions, judgment, examples, or helpers improve execution; use documentation for passive reference without a repeatable workflow.
+   - Failure branch: no recurrence or no agent workflow → propose documentation or a workspace SOP instead; stop.
 
-5. **Write the operational body.**
-   - Do not add `Purpose`, `When to use`, `Activation`, `Triggers`, or equivalent restatements. The description owns job and selection semantics.
-   - For SOP, coding, tooling, and review skills, use terse commands, decisions, constraints, and observable checks. Fragments are fine.
-   - For creative skills, the body may use evocative language when tone changes generation quality. Descriptions remain denotative and terse.
-   - Provide the ordered workflow and critical constraints.
-   - Consider inputs, prerequisites, validation, error handling, output contract, and examples; include each when it changes behavior or removes meaningful ambiguity.
-   - State important autonomy, approval, and safety boundaries once, near the action they govern.
-   - Prefer observable instructions—commands, conditions, paths, thresholds, outputs, or forbidden actions—over generic quality reminders.
-   - Keep examples sparse and distinct. Each should teach a decision or edge case rather than restate the workflow.
+5. **Map the workflow and resource graph.**
+   - Consumes: use cases, artifact decision. Produces: ordered stages with handoffs (`consumes → produces → used by → failure branch`) and a file graph. Used by: stages 6–8.
+   - One supporting file per load condition; name each file's condition and consumer at the step that loads it.
+   - Failure branch: a stage has no consumer for its output → merge or delete it.
 
-6. **Preserve useful knowledge without preserving accumulation.**
-   - Keep verified domain judgment and hard-won failure handling, including material that helps weaker or context-poor models.
-   - Remove duplicated guidance, unexplained references to other skills, model-specific folklore, and instructions the host already guarantees.
-   - Keep the skill self-contained. Do not require another skill to understand this one.
+6. **Author the bundle.**
+   - Consumes: stage map, profile, destination, resource graph. Produces: `SKILL.md` plus supporting files at the resolved destination. Used by: stages 7–9.
+   - Core workflow and load-bearing judgment stay in `SKILL.md`; conditional depth moves to `references/`, deterministic checks to `scripts/`, static inputs to `assets/`, behavioral cases to `evals/`.
+   - Description is a semantic index: job, activation conditions, likely request language, artifacts, only necessary exclusions. No mood, rationale, or tutorial prose.
+   - Do not add `Purpose`, `When to use`, `Activation`, `Triggers`, or equivalent headings; the description owns selection semantics.
+   - State autonomy, approval, and safety boundaries once, near the action they govern.
+   - Failure branch: instructions drift or duplicate → cut accumulation, keep verified judgment; re-run stage 5 if structure no longer matches.
 
-7. **Validate behavior and packaging.**
-   - Run `python scripts/skill-efficiency-check.py <skill-dir-or-SKILL.md>` from this skill directory, or use its installed path.
-   - Treat failures as structural problems and warnings or suggestions as review prompts, not automatic rewrite orders.
-   - Check supporting paths, exercise bundled scripts, and use the host's own skill validation when available.
-   - Review a few representative trigger and non-trigger requests when the description changed materially. Build a larger evaluation only when repeated real failures justify it.
+7. **Validate structure.**
+   - Consumes: authored bundle. Produces: validator report. Used by: stages 8, 9.
+   - Run `python scripts/skill-efficiency-check.py <skill-dir>` with `--host <profile>`; add `--strict` before packaging and `--format json` for tooling.
+   - Failures (dangling, escaping, case-mismatched, or cyclic references) are structural: fix, do not ship. Orphan warnings fail under `--strict`—link the file or delete it.
+   - Failure branch: validator reports profile errors → fix profile JSON per the closed schema; structural issues → repair links or remove files.
 
-8. **Finish the change.**
-   - Make in-scope, low-risk edits directly when intent and target are clear.
-   - Ask before destructive changes, external writes, or a material expansion of scope.
-   - Report changed files, validation performed, and any intentional warning or tradeoff.
+8. **Evaluate behavior.**
+   - Consumes: validator-clean bundle. Produces: eval fixtures (`evals/cases.json` schema) and results. Used by: stage 9.
+   - Validate fixtures deterministically: `python scripts/run-skill-evals.py --cases <file>`; cover obvious and paraphrased triggers, neighboring non-triggers, all destination branches and explicit-target bypass, creation, audit, missing inputs, broken paths, unsafe scope, repeated runs, and script failure.
+   - Live runs are opt-in via `--adapter <command>`; the adapter exchanges JSON and returns normalized observations. Do not make package checks depend on a model.
+   - Failure branch: fixture schema invalid → fix schema; adapter run flakes → treat as advisory, never as a release gate.
+
+9. **Audit traceability and finish.**
+   - Consumes: reports from stages 7–8. Produces: packaged change and report. Used by: user.
+   - Final audit: map each use case to workflow step → resource → load condition → validation → recovery. Every supporting file must appear; remove entries with no consumer.
+   - Report changed files, destination and scope, validation performed, and intentional warnings.
+   - Make in-scope, low-risk edits directly; ask before destructive changes, external writes, or material scope expansion.
+   - Failure branch: audit finds an unlinked file or unstated condition → return to stage 5 for that file; do not weaken the check.
 
 ## Validation checklist
 
-- The skill teaches a recurring workflow rather than merely naming a topic.
-- The description fully carries the job, activation conditions, and necessary boundaries.
-- The body contains judgment and procedure that materially guide execution.
-- Body register fits the task: terse for operational skills; evocative only where creative generation benefits.
-- Supporting files are useful, local, and loaded at the right time.
-- Required host constraints and runtime assumptions are accurate.
-- Generic quality prose and repeated examples have been removed before useful detail.
-- The lightweight efficiency check and relevant host/package checks pass.
+- Workflow teaches a recurring task; description fully carries job, triggers, and necessary boundaries.
+- Destination was resolved explicitly—no scope inferred from cwd—and confirmed before writing.
+- Each supporting file is reachable from `SKILL.md`, loaded under a stated condition, and consumed by a named step.
+- Handoffs name consumes, produces, used by, and failure branch.
+- Host constraints and runtime assumptions come from the selected profile or verified host documentation.
+- Efficiency check passes; strict run is clean before packaging; eval fixtures validate deterministically.
+- Accumulation (duplicate guidance, generic quality prose, restated examples) removed before shipping.
 
 ## Recovery
 
-- **Workflow is vague:** reduce it to concrete requests, inputs, decisions, and results before drafting.
-- **Triggering is unreliable:** revise the description using real user language and adjacent non-trigger cases.
-- **Description is flowery:** replace voice and explanation with job, trigger, artifact, and outcome terms.
-- **Body repeats the description:** delete the restatement and begin with operational content.
-- **Body is unwieldy:** separate conditional detail into references, then remove repetition rather than merely moving it.
-- **Many skills overlap:** compare their real workflows; merge fake separations and keep distinct jobs separate.
-- **A deterministic rule remains fuzzy:** encode it in a script when doing so is simpler and more reliable than prose.
-- **Upstream material is bloated or doctrinal:** retain verified workflow knowledge and rebuild the instructions around the target host and users.
+- **Workflow is vague:** reduce to concrete requests, inputs, decisions, and results before drafting.
+- **Triggering is unreliable:** revise the description with real user language and adjacent non-triggers.
+- **Destination is ambiguous or collides:** re-run the scope gate; existing skill → modify, non-skill collision → pick another target.
+- **Validator flags a cycle:** keep links one-directional from `SKILL.md` outward; replace back-links with routing via the root.
+- **Orphan warning:** link the file from the step that consumes it, or delete it; do not leave silent files.
+- **Case mismatch on Windows:** match on-disk casing exactly; the validator compares segment by segment.
+- **Profile JSON rejected:** the schema is closed—remove unknown keys and re-check limits.
+- **A deterministic rule stays fuzzy:** encode it in a script when that is simpler and more reliable than prose.
+- **Upstream material is bloated or doctrinal:** keep verified workflow knowledge and rebuild around the target host and users.
 
 ## Output
 
-A completed pass leaves a valid, packaged skill; useful supporting files where warranted; a reliable trigger description; and a concise record of validation and intentional tradeoffs.
+A completed pass leaves a valid, connected, packaged skill at an explicitly confirmed destination: reliable trigger description; workflow stages with explicit handoffs; every supporting file reachable, conditioned, consumed, and validated; plus a concise record of validation and intentional tradeoffs.

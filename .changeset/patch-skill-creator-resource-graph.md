@@ -1,0 +1,5 @@
+---
+"@howaboua/pi-skill-skill-creator": patch
+---
+
+Validate skills as connected resource graphs and route new skills to an explicit destination. The efficiency checker now traverses local links and path mentions from SKILL.md to detect dangling, escaping, case-mismatched, and cyclic references, warn about orphaned supporting files (failing under --strict), and enforce host profiles (pi default, generic) with a closed schema, plus --format json. Ambiguous creation asks once for Global, Project-local, or Custom instead of inferring scope from the working directory: Global resolves through PI_CODING_AGENT_DIR or ~/.pi/agent/skills, Project-local through the nearest git root's .pi/skills, and Custom paths are classified by discovery (including pi --skill); the resolved destination is confirmed before writing, with existing skills switching to modification semantics. Adds deterministic evaluation fixtures covering destination branches and an opt-in adapter protocol for live runs, focused references with a routing index at the legacy guide path, and workflow handoffs (consumes, produces, used by, failure branch) for every stage.

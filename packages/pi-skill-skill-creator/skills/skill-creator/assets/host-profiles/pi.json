@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "profile": "pi",
+  "profile_description": "Pi coding agent skill format rules, verified against Pi skill documentation",
+  "frontmatter": {
+    "required": [
+      "name",
+      "description"
+    ],
+    "allowed": [
+      "name",
+      "description",
+      "license",
+      "compatibility",
+      "metadata",
+      "allowed-tools",
+      "disable-model-invocation"
+    ]
+  },
+  "name": {
+    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    "max_length": 64
+  },
+  "description": {
+    "max_length": 1024,
+    "warn_above": 500
+  },
+  "supporting_directories": [
+    "references",
+    "scripts",
+    "assets",
+    "evals"
+  ],
+  "ignored_paths": [
+    "__pycache__/"
+  ],
+  "checks": {
+    "forbidden_headings": true,
+    "unknown_fields": "suggest"
+  }
+}

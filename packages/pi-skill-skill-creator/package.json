@@ -10,6 +10,10 @@
     "skill",
     "skill-creator"
   ],
+  "scripts": {
+    "check": "python skills/skill-creator/scripts/skill-efficiency-check.py skills/skill-creator --host pi --strict",
+    "test": "node tests/skill-efficiency-check.test.mjs && node tests/run-skill-evals.test.mjs"
+  },
   "license": "MIT",
   "publishConfig": {
     "access": "public"

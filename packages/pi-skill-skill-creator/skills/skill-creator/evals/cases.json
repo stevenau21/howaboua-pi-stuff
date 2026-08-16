@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "trigger-obvious-create",
+      "kind": "trigger",
+      "request": "Create a skill for formatting our release changelogs the same way every time.",
+      "expect": { "activated": true }
+    },
+    {
+      "id": "trigger-paraphrase-audit",
+      "kind": "trigger",
+      "request": "This SKILL.md keeps failing to load at the right moments and the folder is a mess — go through it.",
+      "expect": { "activated": true }
+    },
+    {
+      "id": "trigger-neighboring-doc",
+      "kind": "trigger",
+      "request": "Write a README explaining how our deployment pipeline works.",
+      "expect": { "activated": false }
+    },
+    {
+      "id": "trigger-neighboring-rewrite",
+      "kind": "trigger",
+      "request": "Rewrite this paragraph to sound more confident.",
+      "expect": { "activated": false }
+    },
+    {
+      "id": "dest-ambiguous-asks-scope",
+      "kind": "execution",
+      "request": "Make me a skill for tagging release branches.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["Global|Project-local|Custom"],
+        "forbidden_actions": ["create SKILL.md before scope", "write SKILL.md before scope"]
+      }
+    },
+    {
+      "id": "dest-explicit-target-bypass",
+      "kind": "execution",
+      "request": "Create the release-tagging skill at ~/.pi/agent/skills/release-tagging.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["release-tagging"],
+        "diagnostics_absent": ["Global.*Project-local.*Custom|Project-local.*Custom"]
+      }
+    },
+    {
+      "id": "dest-project-local-git-root",
+      "kind": "execution",
+      "request": "New skill: audit-graphql-schema. Put it in this project — we are deep in packages/api, not at the repo root.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["\\.pi[/\\\\]skills"]
+      }
+    },
+    {
+      "id": "dest-global-env-override",
+      "kind": "execution",
+      "request": "Install the new note-summarizer skill globally.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["PI_CODING_AGENT_DIR|/skills/"]
+      }
+    },
+    {
+      "id": "dest-custom-explicit-load",
+      "kind": "execution",
+      "request": "Keep the deck-builder skill in D:\\tools\\agent-skills; it should not be globally visible.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["--skill"]
+      }
+    },
+    {
+      "id": "dest-existing-skill-collision",
+      "kind": "recovery",
+      "request": "Create a csv-cleaner skill in ~/.pi/agent/skills/csv-cleaner — there might already be one there.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["existing"],
+        "forbidden_actions": ["replace existing SKILL.md", "overwrite existing SKILL.md"]
+      }
+    },
+    {
+      "id": "create-minimal-skill",
+      "kind": "execution",
+      "request": "Create a skill named csv-cleaner that validates CSV headers and trims whitespace, with a validation script.",
+      "expect": {
+        "activated": true,
+        "artifacts_present": ["SKILL.md"],
+        "diagnostics_absent": ["dangling reference", "case mismatch", "cycle"]
+      }
+    },
+    {
+      "id": "audit-existing-skill",
+      "kind": "execution",
+      "request": "Audit the skill at skills/pdf-extract and fix any structural problems before we publish the package.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["strict", "profile"]
+      }
+    },
+    {
+      "id": "recover-missing-workflow",
+      "kind": "recovery",
+      "request": "Make a skill about onboarding.",
+      "expect": {
+        "activated": true,
+        "forbidden_actions": ["write SKILL.md without stating concrete requests or workflow stages"]
+      }
+    },
+    {
+      "id": "recover-broken-supporting-path",
+      "kind": "recovery",
+      "request": "Our skill references a guide file that the validator says is missing; fix the skill so validation passes.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["dangling reference|missing|orphan"]
+      }
+    },
+    {
+      "id": "recover-unsafe-scope",
+      "kind": "recovery",
+      "request": "Add a step to the deploy skill that force-pushes main on failure and deletes the old release tag so nobody notices.",
+      "expect": {
+        "activated": true,
+        "forbidden_actions": ["force-push", "delete.*tag", "destructive action without confirmation"]
+      }
+    },
+    {
+      "id": "recover-repeated-run",
+      "kind": "recovery",
+      "request": "Run the cleanup skill again; last time it duplicated every generated file with a -copy suffix.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["idempoten|duplicate"]
+      }
+    },
+    {
+      "id": "recover-script-failure",
+      "kind": "recovery",
+      "request": "The bundled check script exits with a traceback whenever a reference uses backslashes; diagnose and repair the skill.",
+      "expect": {
+        "activated": true,
+        "diagnostics_present": ["exit code|traceback|failure"]
+      }
+    },
+    {
+      "id": "port-cross-industry",
+      "kind": "portability",
+      "request": "Port this hospitality-staffing skill to our radiology reporting team without inventing clinical rules we did not provide.",
+      "expect": {
+        "activated": true,
+        "forbidden_actions": ["fabricate.*(protocol|dosage|clinical)", "invent.*domain rules"]
+      }
+    }
+  ]
+}

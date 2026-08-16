@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "profile": "generic",
+  "profile_description": "Verified common rules for SKILL.md-based skills; no host-specific assumptions",
+  "frontmatter": {
+    "required": [
+      "name",
+      "description"
+    ],
+    "allowed": [
+      "name",
+      "description"
+    ]
+  },
+  "name": {
+    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    "max_length": null
+  },
+  "description": {
+    "max_length": null,
+    "warn_above": null
+  },
+  "supporting_directories": [
+    "references",
+    "scripts",
+    "assets"
+  ],
+  "ignored_paths": [
+    "__pycache__/"
+  ],
+  "checks": {
+    "forbidden_headings": true,
+    "unknown_fields": "suggest"
+  }
+}
