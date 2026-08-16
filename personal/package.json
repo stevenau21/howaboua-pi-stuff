@@ -1,0 +1,11 @@
+{
+  "name": "stevenau-personal-skills",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal skills layered on the howaboua-pi-stuff fork; not for upstream PRs.",
+  "keywords": ["pi-package"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}
