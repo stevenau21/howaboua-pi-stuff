@@ -53,7 +53,7 @@ Keep `main` on the fork as the single deployable line; topic branches exist for 
 1. Dev clone, branch off `fork/main`.
 2. One folder per skill: `personal/skills/<skill-name>/SKILL.md` (frontmatter: kebab-case `name`, quoted `description` with job + "Use for" triggers + key exclusions). Optional `references/`, `scripts/`, `assets/`, `evals/`; every file reachable from `SKILL.md`.
 3. For a new skill consider `/skill:skill-creator` for authoring depth.
-4. Validate non-strict (runbooks may lack references/scripts): run the checker from Update-skills paths without `--strict`.
+4. Validate non-strict (runbooks may lack references or scripts folders): run the checker from Update-skills paths without `--strict`.
 5. Commit, `git push fork <branch>:main`, pull on each machine, restart pi. New skills under `personal/` are discovered via its `pi` manifest — no settings.json change.
 
 ## Bootstrap a new machine

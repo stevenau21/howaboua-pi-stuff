@@ -274,7 +274,7 @@ def normalize_relpath(target: str) -> str:
     return posixpath.normpath(target.replace("\\", "/"))
 
 
-def link_targets(line: str, mention_re: re.Pattern[str]) -> set[str]:
+def link_targets(line: str, mention_re: re.Pattern[str], supporting_dirs: set[str] | None = None) -> set[str]:
     """Extract candidate local reference targets from one visible line."""
     targets: set[str] = set()
     for match in re.finditer(r"(?<!\!)\[[^\]]*\]\(\s*([^)\s]+)\s*\)", line):
@@ -283,8 +283,17 @@ def link_targets(line: str, mention_re: re.Pattern[str]) -> set[str]:
         targets.add(match.group(1))
     for match in mention_re.finditer(line):
         target = match.group(1).rstrip(".,;:!?\"')")
-        if target:
-            targets.add(target)
+        if not target:
+            continue
+        # Adjacent-directory idiom like "references/scripts" names two folders, not a path.
+        segments = target.split("/")
+        if (
+            supporting_dirs
+            and len(segments) > 1
+            and all(segment in supporting_dirs for segment in segments)
+        ):
+            continue
+        targets.add(target)
     return targets
 
 
@@ -334,6 +343,7 @@ def extract_edges(
     root: Path,
     inventory: dict[str, str],
     mention_re: re.Pattern[str],
+    supporting_dirs: set[str] | None = None,
 ) -> tuple[list[dict], list[dict], list[str]]:
     """Extract graph edges, diagnostics, and external URLs from one file's text."""
     edges: list[dict] = []
@@ -342,7 +352,7 @@ def extract_edges(
 
     source_is_root = source_relpath == "SKILL.md"
     for line_number, line in visible_lines(text):
-        for raw in sorted(link_targets(line, mention_re)):
+        for raw in sorted(link_targets(line, mention_re, supporting_dirs)):
             target = raw.split("#", 1)[0].rstrip("/")
             fragment_only = target == ""
             if fragment_only:
@@ -580,7 +590,7 @@ def main() -> int:
         for source_fold, text_content in scanned.items():
             source_relpath = inventory[source_fold]
             source_edges, diagnostics, external = extract_edges(
-                source_relpath, text_content, root, inventory, mention_re
+                source_relpath, text_content, root, inventory, mention_re, set(profile["supporting_directories"])
             )
             graph_issues.extend(diagnostics)
             external_links.extend(external)

@@ -136,6 +136,12 @@ test("backslash separators in mentions resolve", () => {
 	assert.equal(result.status, 0, result.stdout);
 });
 
+test("adjacent-directory idiom is not a link", () => {
+	write("SKILL.md", `${validFrontmatter}\nRunbooks may lack references/scripts entirely; use assets only if needed.\n`);
+	const result = run([".", "--strict"]);
+	assert.equal(result.status, 0, result.stdout);
+});
+
 test("malformed profile fails with clear error", () => {
 	const badProfile = path.join(root, "bad.json");
 	fs.writeFileSync(badProfile, JSON.stringify({ schema_version: 1, profile: "x", profile_description: "d", frontmatter: { required: ["name"], allowed: ["name"] }, name: { pattern: "^a$", max_length: 5 }, description: { max_length: 10, warn_above: 5 }, supporting_directories: ["references"], ignored_paths: [], checks: { forbidden_headings: true, unknown_fields: "suggest" }, extra_key: true }));
